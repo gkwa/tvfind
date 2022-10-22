@@ -22,9 +22,13 @@ import (
 
 // Example usage in a plan
 dagger.#Plan & {
-	client: filesystem: "./": read: contents: dagger.#FS
+	client: {
+		filesystem: "./": read: contents: dagger.#FS
+	}
 
-	actions: build: #PythonBuild & {
-		source: client.filesystem."./".read.contents
+	actions: {
+		build: #PythonBuild & {
+			source: client.filesystem."./".read.contents
+		}
 	}
 }
