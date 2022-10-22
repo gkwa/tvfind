@@ -3,6 +3,7 @@ package main
 import (
 	"dagger.io/dagger"
 	"universe.dagger.io/docker"
+	"universe.dagger.io/docker/cli"
 )
 
 // This action builds a docker image from a python app.
@@ -24,11 +25,17 @@ import (
 dagger.#Plan & {
 	client: {
 		filesystem: "./": read: contents: dagger.#FS
+		network: "unix:///var/run/docker.sock": connect: dagger.#Socket
 	}
 
 	actions: {
 		build: #PythonBuild & {
 			source: client.filesystem."./".read.contents
+		}
+		load: cli.#Load & {
+			image: build.output
+			host:  client.network."unix:///var/run/docker.sock".connect
+			tag:   "myimage"
 		}
 	}
 }
