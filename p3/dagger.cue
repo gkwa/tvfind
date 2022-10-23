@@ -7,6 +7,17 @@ import (
 	"dagger.io/dagger/core"
 )
 
+dagger.#Plan & {
+	// Say hello by writing to a file
+	actions: hello: #AddHello & {
+		dir: client.filesystem.".".read.contents
+	}
+	client: filesystem: ".": {
+		read: contents:  dagger.#FS
+		write: contents: actions.hello.result
+	}
+}
+
 // Write a greeting to a file, and add it to a directory
 #AddHello: {
 	// The input directory
