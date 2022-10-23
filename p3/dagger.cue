@@ -3,6 +3,7 @@ package main
 import (
 	"dagger.io/dagger"
 	"dagger.io/dagger/core"
+	"universe.dagger.io/docker"
 )
 
 dagger.#Plan & {
@@ -18,6 +19,14 @@ dagger.#Plan & {
 
 // Write a greeting to a file, and add it to a directory
 #AddHello: {
+	build: docker.#Build & {
+		steps: [
+			docker.#Pull & {
+				source: "node:16"
+			},
+		]
+	}
+
 	// The input directory
 	dir: dagger.#FS
 
