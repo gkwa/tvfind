@@ -9,8 +9,10 @@ import (
 
 dagger.#Plan & {
 	// Say hello by writing to a file
-	actions: hello: #AddHello & {
-		dir: client.filesystem.".".read.contents
+	actions: {
+		hello: #AddHello & {
+			dir: client.filesystem.".".read.contents
+		}
 	}
 	client: {
 		network: "unix:///var/run/docker.sock": connect: dagger.#Socket
