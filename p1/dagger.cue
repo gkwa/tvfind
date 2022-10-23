@@ -10,7 +10,7 @@ import (
 // Build steps are defined in an inline Dockerfile.
 #PythonBuild: docker.#Dockerfile & {
 	dockerfile: contents: """
-		FROM python:3.10.8-slim
+		FROM python:3.10-slim-bullseye
 		RUN apt-get update -y
 		RUN apt-get install -y python3-pip python-dev build-essential
 		COPY . /app
