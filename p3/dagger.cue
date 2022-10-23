@@ -13,6 +13,20 @@ dagger.#Plan & {
 		hello: #AddHello & {
 			dir: client.filesystem.".".read.contents
 		}
+		buildImages: {
+			addHelloBuild: #AddHello & {
+				dir: client.filesystem.".".read.contents
+			}
+		}
+
+		buildLocal: {
+			addHelloImageToLocalDockerRepo: cli.#Load & {
+				image: buildImages.addHelloBuild.image
+				host:  client.network."unix:///var/run/docker.sock".connect
+				tag:   "addhello-dagger:latest"
+			}
+		}
+
 	}
 	client: {
 		network: "unix:///var/run/docker.sock": connect: dagger.#Socket
