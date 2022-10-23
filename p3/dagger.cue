@@ -5,6 +5,8 @@ package main
 import (
 	"dagger.io/dagger"
 	"dagger.io/dagger/core"
+	"universe.dagger.io/docker"
+	"universe.dagger.io/docker/cli"
 )
 
 dagger.#Plan & {
@@ -13,6 +15,7 @@ dagger.#Plan & {
 		hello: #AddHello & {
 			dir: client.filesystem.".".read.contents
 		}
+
 		buildImages: {
 			addHelloBuild: #AddHello & {
 				dir: client.filesystem.".".read.contents
@@ -41,7 +44,16 @@ dagger.#Plan & {
 // Write a greeting to a file, and add it to a directory
 #AddHello: {
 	// The input directory
-	dir: dagger.#FS
+	dir:   dagger.#FS
+	image: build.output
+
+	build: docker.#Build & {
+		steps: [
+			docker.#Pull & {
+				source: "alpine"
+			},
+		]
+	}
 
 	// The name of the person to greet
 	name: string | *"world"
