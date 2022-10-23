@@ -28,10 +28,6 @@ dagger.#Plan & {
 					},
 				]
 			}
-			push: docker.#Push & {
-				image: build.output
-				dest:  "registry.example.com/mysql:\(tag)"
-			}
 		}
 	}
 }

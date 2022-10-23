@@ -29,8 +29,8 @@ dagger.#Plan & {
 				tag:   "addhello-dagger:latest"
 			}
 		}
-
 	}
+
 	client: {
 		network: "unix:///var/run/docker.sock": connect: dagger.#Socket
 		filesystem: ".": {
