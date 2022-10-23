@@ -12,10 +12,14 @@ dagger.#Plan & {
 	actions: hello: #AddHello & {
 		dir: client.filesystem.".".read.contents
 	}
-	client: filesystem: ".": {
-		read: contents:  dagger.#FS
-		write: contents: actions.hello.result
+	client: {
+		network: "unix:///var/run/docker.sock": connect: dagger.#Socket
+		filesystem: ".": {
+			read: contents:  dagger.#FS
+			write: contents: actions.hello.result
+		}
 	}
+
 }
 
 // Write a greeting to a file, and add it to a directory
