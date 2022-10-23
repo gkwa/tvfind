@@ -1,69 +1,63 @@
-// https://docs.dagger.io/1221/action/
-
 package main
 
 import (
 	"dagger.io/dagger"
-	"dagger.io/dagger/core"
 	"universe.dagger.io/docker"
 	"universe.dagger.io/docker/cli"
 )
 
-dagger.#Plan & {
-	// Say hello by writing to a file
-	actions: {
-		hello: #AddHello & {
-			dir: client.filesystem.".".read.contents
-		}
+// This action builds a docker image from a python app.
+#PythonBuild: {
+	// Source code of the Python application
+	app: dagger.#FS
 
-		buildImages: {
-			addHelloBuild: #AddHello & {
-				dir: client.filesystem.".".read.contents
-			}
-		}
+	_pull: docker.#Pull & {
+		source: "python:3.9"
+	}
 
-		buildLocal: {
-			addHelloImageToLocalDockerRepo: cli.#Load & {
-				image: buildImages.addHelloBuild.image
-				host:  client.network."unix:///var/run/docker.sock".connect
-				tag:   "addhello-dagger:latest"
-			}
+	_copy: docker.#Copy & {
+		input:    _pull.output
+		contents: app
+		dest:     "/app"
+	}
+
+	_run: docker.#Run & {
+		input: _copy.output
+		command: {
+			name: "pip"
+			args: ["install", "-r", "/app/requirements.txt"]
 		}
 	}
 
-	client: {
-		network: "unix:///var/run/docker.sock": connect: dagger.#Socket
-		filesystem: ".": {
-			read: contents:  dagger.#FS
-			write: contents: actions.hello.result
-		}
+	_set: docker.#Set & {
+		input: _run.output
+		config: cmd: ["python", "/app/app.py"]
 	}
 
+	// Resulting container image
+	image: _set.output
 }
 
-// Write a greeting to a file, and add it to a directory
-#AddHello: {
-	// The input directory
-	dir:   dagger.#FS
-	image: build.output
-
-	build: docker.#Build & {
-		steps: [
-			docker.#Pull & {
-				source: "alpine"
-			},
-		]
+dagger.#Plan & {
+	client: {
+		filesystem: "./src": read: contents: dagger.#FS
+		network: "unix:///var/run/docker.sock": connect: dagger.#Socket
 	}
 
-	// The name of the person to greet
-	name: string | *"world"
+	actions: {
+		load: cli.#Load & {
+			image: build.image
+			host:  client.network."unix:///var/run/docker.sock".connect
+			tag:   "myimage"
+		}
 
-	write: core.#WriteFile & {
-		input:    dir
-		path:     "hello-\(name).txt"
-		contents: "hello, \(name)!"
+		build: #PythonBuild & {
+			app: client.filesystem."./src".read.contents
+		}
+
+		push: docker.#Push & {
+			image: build.image
+			dest:  "localhost:5042/example"
+		}
 	}
-
-	// The directory with greeting message added
-	result: write.output
 }

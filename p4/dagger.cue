@@ -1,3 +1,5 @@
+// https://docs.dagger.io/1205/container-images#automation
+
 package main
 
 import (
@@ -6,58 +8,39 @@ import (
 	"universe.dagger.io/docker/cli"
 )
 
-// This action builds a docker image from a python app.
-#PythonBuild: {
-	// Source code of the Python application
-	app: dagger.#FS
-
-	_pull: docker.#Pull & {
-		source: "python:3.9"
-	}
-
-	_copy: docker.#Copy & {
-		input:    _pull.output
-		contents: app
-		dest:     "/app"
-	}
-
-	_run: docker.#Run & {
-		input: _copy.output
-		command: {
-			name: "pip"
-			args: ["install", "-r", "/app/requirements.txt"]
-		}
-	}
-
-	_set: docker.#Set & {
-		input: _run.output
-		config: cmd: ["python", "/app/app.py"]
-	}
-
-	// Resulting container image
-	image: _set.output
-}
-
 dagger.#Plan & {
 	client: {
-		filesystem: "./src": read: contents: dagger.#FS
 		network: "unix:///var/run/docker.sock": connect: dagger.#Socket
 	}
 
-	actions: {
-		load: cli.#Load & {
-			image: build.image
-			host:  client.network."unix:///var/run/docker.sock".connect
-			tag:   "myimage"
-		}
+	actions: versions: {
+		"8.0": _
+		"5.7": _
 
-		build: #PythonBuild & {
-			app: client.filesystem."./src".read.contents
-		}
+		// This is a template
+		// See https://cuelang.org/docs/tutorials/tour/types/templates/
+		[tag_iter=string]: {
+			build: docker.#Build & {
+				steps: [
+					docker.#Pull & {
+						source: "mysql:\(tag_iter)"
+					},
+					docker.#Set & {
+						config: cmd: [
+							"--character-set-server=utf8mb4",
+							"--collation-server=utf8mb4_unicode_ci",
+						]
+					},
+				]
+			}
 
-		push: docker.#Push & {
-			image: build.image
-			dest:  "localhost:5042/example"
+			load: cli.#Load & {
+				image: build.output
+				host:  client.network."unix:///var/run/docker.sock".connect
+				tag:   "mysql:\(tag_iter)"
+			}
+
+			image: build.output
 		}
 	}
 }
